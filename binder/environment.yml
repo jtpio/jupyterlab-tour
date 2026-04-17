@@ -8,16 +8,19 @@ name: jupyterlab-tour-demo
 
 channels:
   - conda-forge
+  - nodefaults
 
 dependencies:
-  # runtime dependencies
-  - python ==3.11.* #  binder needs a fairly weird pin, at present
-  - jupyterlab >=4.0.5,<5
-  - notebook >=7,<8
+  # oldest supported python
+  - python ==3.10.* #  binder needs a fairly weird pin, at present
+  # other language runtimes
+  - nodejs 24.*
+  # clients
+  - jupyterlab >=4.3.0,<5
+  - notebook >=7.3.0,<8
   # labextension build dependencies
   - hatch-jupyter-builder >=0.5
   - hatch-nodejs-version
   - hatchling >=1.5.0
-  - nodejs >=18,<19
   - pip
   - python-build

@@ -1,8 +1,10 @@
 import { expect, test } from '@jupyterlab/galata';
+import { advanceTour } from './_testutils';
+import type { Page } from 'playwright-core';
 
 test.use({
   waitForApplication: async ({ baseURL }, use, testInfo) => {
-    const waitIsReady = async (page): Promise<void> => {
+    const waitIsReady = async (page: Page): Promise<void> => {
       await page.waitForSelector('#main-panel');
     };
     await use(waitIsReady);
@@ -11,14 +13,10 @@ test.use({
 
 test('should run the welcome tour', async ({ page }) => {
   await page.getByRole('button', { name: 'Start now' }).click();
-  await page.getByLabel('Next', { exact: true }).click();
-  await page.getByLabel('Next', { exact: true }).click();
-  await page.getByLabel('Next', { exact: true }).click();
-  await page.getByLabel('Next', { exact: true }).click();
-  await page.getByLabel('Next', { exact: true }).click();
+  await advanceTour(page, 6);
 
   await expect
-    .soft(page.locator('.react-joyride__tooltip h4'))
+    .soft(page.locator('.react-joyride__tooltip h1'))
     .toHaveText('Command Palette');
   await page.getByLabel('Done').click();
 });
@@ -26,18 +24,11 @@ test('should run the welcome tour', async ({ page }) => {
 test('should run the notebook tour', async ({ page }) => {
   await page.getByRole('menuitem', { name: 'File' }).click();
   await page.getByLabel('file browser').getByText('New').click();
+  await page.getByText('Python 3 (ipykernel)').click();
 
-  const [notebookPage] = await Promise.all([
-    page.waitForEvent('popup'),
-    page.getByText('Python 3 (ipykernel)').click()
-  ]);
+  const notebookPage = await page.waitForEvent('popup');
   await notebookPage.getByRole('button', { name: 'Start now' }).click();
-  await notebookPage.getByLabel('Next', { exact: true }).click();
-  await notebookPage.getByLabel('Next', { exact: true }).click();
-  await notebookPage.getByLabel('Next', { exact: true }).click();
-  await notebookPage.getByLabel('Next', { exact: true }).click();
-  await notebookPage.getByLabel('Next', { exact: true }).click();
-  await notebookPage.getByLabel('Next', { exact: true }).click();
+  await advanceTour(notebookPage, 7);
   await expect
     .soft(notebookPage.locator('.react-joyride__tooltip p'))
     .toHaveText(/Its name and its status are displayed here\.$/);

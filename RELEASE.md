@@ -96,7 +96,6 @@ Here is a summary of the steps to cut a new release:
   We recommend using a scoped token for security reasons.
 
 - You can store the token as `PYPI_TOKEN` in your fork's `Secrets`.
-
   - Advanced usage: if you are releasing multiple repos, you can create a secret named
     `PYPI_TOKEN_MAP` instead of `PYPI_TOKEN` that is formatted as follows:
 

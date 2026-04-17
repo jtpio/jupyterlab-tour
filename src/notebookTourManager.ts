@@ -1,16 +1,12 @@
-import Ajv, { ErrorObject, ValidateFunction } from 'ajv';
+import type { ErrorObject, ValidateFunction } from 'ajv';
 
-import { Notebook } from '@jupyterlab/notebook';
-import { ISignal, Signal } from '@lumino/signaling';
-import USER_SCHEMA from '../schema/user-tours.json';
+import type { Notebook } from '@jupyterlab/notebook';
+import type { ISignal } from '@lumino/signaling';
+import { Signal } from '@lumino/signaling';
 import { notebookTourIcon } from './icons';
-import {
-  INotebookTourManager,
-  ITour,
-  ITourManager,
-  NOTEBOOK_PLUGIN_ID,
-  NS
-} from './tokens';
+import type { INotebookTourManager, ITour, ITourManager } from './tokens';
+import { NOTEBOOK_PLUGIN_ID, NS } from './tokens';
+import { PromiseDelegate } from '@lumino/coreutils';
 
 /**
  * The NotebookTourManager is needed to sync Notebook metadata with the TourManager
@@ -18,10 +14,6 @@ import {
 export class NotebookTourManager implements INotebookTourManager {
   constructor(options: INotebookTourManager.IOptions) {
     this._tourManager = options.tourManager;
-    // `jupyter.lab...` keywords custom keywords rejected by default
-    // we may be able to do better than `strict: false` by defining
-    // custom keywords https://ajv.js.org/keywords.html
-    this._validator = new Ajv({ strict: false }).compile(USER_SCHEMA);
   }
 
   get tourManager(): ITourManager {
@@ -40,13 +32,13 @@ export class NotebookTourManager implements INotebookTourManager {
       return;
     }
 
-    (notebook.model.metadataChanged ?? notebook.model.metadata.changed).connect(() => {
-      this._notebookMetadataChanged(notebook);
-    });
+    (notebook.model.metadataChanged ?? notebook.model.metadata.changed).connect(
+      async () => await this._notebookMetadataChanged(notebook)
+    );
 
     notebook.disposed.connect(this._onNotebookDisposed, this);
 
-    this._notebookMetadataChanged(notebook);
+    await this._notebookMetadataChanged(notebook);
   }
 
   /**
@@ -74,6 +66,7 @@ export class NotebookTourManager implements INotebookTourManager {
     return this._validationErrors.get(notebook) || [];
   }
 
+  /** A signal that emits when notebook tours changes. */
   get notebookToursChanged(): ISignal<INotebookTourManager, Notebook> {
     return this._notebookToursChanged;
   }
@@ -89,9 +82,10 @@ export class NotebookTourManager implements INotebookTourManager {
   }
 
   /**
-   * The metadata changed, and therefor maybe tours: remove and re-add all of them.
+   * The metadata changed, and therefore maybe tours: remove all of them, and
+   * maybe re-add.
    */
-  private _notebookMetadataChanged(notebook: Notebook): void {
+  private async _notebookMetadataChanged(notebook: Notebook): Promise<void> {
     const { model } = notebook;
     const metadata = model
       ? model.getMetadata
@@ -99,44 +93,55 @@ export class NotebookTourManager implements INotebookTourManager {
         : // @ts-expect-error JLab 3 API
           model.metadata.get(NS)
       : null;
-    const trans = this._tourManager.translator;
 
     this._cleanNotebookTours(notebook);
     this._validationErrors.set(notebook, []);
 
     if (metadata) {
-      this._validator(metadata);
-      const errors = this._validator.errors || [];
-      this._validationErrors.set(notebook, errors);
-      if (errors.length) {
-        console.error(
-          trans.__('Validation errors found: fix them in Advanced Settings')
-        );
-        console.table(errors);
-      } else {
-        const tours: ITour[] = metadata['tours'] ?? [];
-        for (const tour of this.tourManager.sortTours(tours)) {
-          try {
-            this._addNotebookTour(notebook, tour);
-            this._tourManager.launch([tour.id], false);
-          } catch (error) {
-            console.groupCollapsed(
-              trans.__(
-                'Error encountered adding notebook tour %1 (%2)',
-                tour.label,
-                tour.id
-              ),
-              error
-            );
-            console.table(tour.steps);
-            console.log(tour.options ?? {});
-            console.groupEnd();
-          }
-        }
-      }
+      await this._updateFromNotebookMetadata(notebook, metadata);
     }
 
     this._notebookToursChanged.emit(notebook);
+  }
+
+  /**
+   * Tour metadata was found:
+   */
+  private async _updateFromNotebookMetadata(
+    notebook: Notebook,
+    metadata: any
+  ): Promise<void> {
+    const { translator } = this._tourManager;
+    const _validator = await Private.ensureValidator();
+    _validator(metadata);
+    const errors = _validator.errors || [];
+    this._validationErrors.set(notebook, errors);
+    if (errors.length) {
+      console.error(
+        translator.__('Validation errors found: fix them in Advanced Settings')
+      );
+      console.table(errors);
+    } else {
+      const tours: ITour[] = metadata['tours'] ?? [];
+      for (const tour of this.tourManager.sortTours(tours)) {
+        try {
+          this._addNotebookTour(notebook, tour);
+          this._tourManager.launch([tour.id], false);
+        } catch (error) {
+          console.groupCollapsed(
+            translator.__(
+              'Error encountered adding notebook tour %1 (%2)',
+              tour.label,
+              tour.id
+            ),
+            error
+          );
+          console.table(tour.steps);
+          console.log(tour.options ?? {});
+          console.groupEnd();
+        }
+      }
+    }
   }
 
   /**
@@ -153,6 +158,32 @@ export class NotebookTourManager implements INotebookTourManager {
   private _tourManager: ITourManager;
   private _notebookTours = new Map<Notebook, ITour[]>();
   private _notebookToursChanged = new Signal<INotebookTourManager, Notebook>(this);
-  private _validator: ValidateFunction;
   private _validationErrors = new Map<Notebook, ErrorObject[]>();
+}
+
+/** A namespace for private values. */
+export namespace Private {
+  let _validator: ValidateFunction | null = null;
+  let _loading: PromiseDelegate<ValidateFunction> | null = null;
+
+  /**
+   * Get a singleton pre-compiled validator function.
+   */
+  export async function ensureValidator(): Promise<ValidateFunction> {
+    if (!_loading) {
+      _loading = new PromiseDelegate();
+
+      const { Ajv } = await import('ajv');
+      const schema = await import('../schema/user-tours.json');
+
+      // `jupyter.lab...` keywords custom keywords rejected by default
+      // we may be able to do better than `strict: false` by defining
+      // custom keywords https://ajv.js.org/keywords.html
+      const ajv = new Ajv({ strict: false });
+      _validator = ajv.compile(schema);
+      _loading.resolve(_validator);
+    }
+
+    return _loading.promise;
+  }
 }

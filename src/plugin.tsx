@@ -1,12 +1,14 @@
-import { JupyterFrontEnd, JupyterFrontEndPlugin } from '@jupyterlab/application';
+import type { JupyterFrontEnd, JupyterFrontEndPlugin } from '@jupyterlab/application';
 import {
   ICommandPalette,
   IToolbarWidgetRegistry,
   InputDialog,
   ReactWidget
 } from '@jupyterlab/apputils';
-import { IMainMenu, MainMenu } from '@jupyterlab/mainmenu';
-import { INotebookTracker, NotebookPanel } from '@jupyterlab/notebook';
+import type { MainMenu } from '@jupyterlab/mainmenu';
+import { IMainMenu } from '@jupyterlab/mainmenu';
+import type { NotebookPanel } from '@jupyterlab/notebook';
+import { INotebookTracker } from '@jupyterlab/notebook';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { ConfigSection } from '@jupyterlab/services';
 import { ITranslator, nullTranslator } from '@jupyterlab/translation';
@@ -19,20 +21,18 @@ import { addTours } from './defaults';
 import { tourIcon } from './icons';
 import { TourButton } from './notebookButton';
 import { NotebookTourManager } from './notebookTourManager';
+import type { ITourHandler, ITourState, ITourTracker } from './tokens';
 import {
   DEFAULTS_PLUGIN_ID,
   INotebookTourManager,
-  ITourHandler,
   ITourManager,
-  ITourState,
-  ITourTracker,
   IUserTourManager,
   NOTEBOOK_PLUGIN_ID,
   NS,
   PLUGIN_ID,
   USER_PLUGIN_ID
 } from './tokens';
-import { TourHandler } from './tour';
+import type { TourHandler } from './tour';
 import { TourManager } from './tourManager';
 import { UserTourManager } from './userTourManager';
 import { PromiseDelegate } from '@lumino/coreutils';

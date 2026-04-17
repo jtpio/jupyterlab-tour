@@ -1,6 +1,7 @@
-import { ISettingRegistry } from '@jupyterlab/settingregistry';
+import type { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { PromiseDelegate } from '@lumino/coreutils';
-import { ITour, ITourManager, IUserTourManager, USER_PLUGIN_ID } from './tokens';
+import type { ITour, ITourManager, IUserTourManager } from './tokens';
+import { USER_PLUGIN_ID } from './tokens';
 
 import { userTourIcon } from './icons';
 
