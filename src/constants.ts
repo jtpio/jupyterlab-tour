@@ -1,4 +1,4 @@
-import { Props as JoyrideProps } from 'react-joyride';
+import type { Props as JoyrideProps } from 'react-joyride';
 import { NS } from './tokens';
 
 /**

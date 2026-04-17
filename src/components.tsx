@@ -1,9 +1,10 @@
 import { UseSignal } from '@jupyterlab/apputils';
-import { ISignal } from '@lumino/signaling';
+import type { ISignal } from '@lumino/signaling';
 import React from 'react';
-import ReactJoyride, { CallBackProps, STATUS } from 'react-joyride';
-import { ITourManager } from './tokens';
-import { TourHandler } from './tour';
+import type { CallBackProps } from 'react-joyride';
+import ReactJoyride, { STATUS } from 'react-joyride';
+import type { ITourManager } from './tokens';
+import type { TourHandler } from './tour';
 
 /**
  * Tour component properties

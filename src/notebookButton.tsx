@@ -1,12 +1,12 @@
 import * as React from 'react';
 
 import { ReactWidget } from '@jupyterlab/apputils';
-import { Notebook } from '@jupyterlab/notebook';
+import type { Notebook } from '@jupyterlab/notebook';
 import { HTMLSelect } from '@jupyterlab/ui-components';
-import { TranslationBundle } from '@jupyterlab/translation';
+import type { TranslationBundle } from '@jupyterlab/translation';
 
 import { errorTourIcon, notebookHasTourIcon, notebookTourIcon } from './icons';
-import { INotebookTourManager } from './tokens';
+import type { INotebookTourManager } from './tokens';
 
 export class TourButton extends ReactWidget {
   /**

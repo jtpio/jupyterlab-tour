@@ -1,15 +1,20 @@
-import { ErrorObject } from 'ajv';
-import { ISettingRegistry } from '@jupyterlab/settingregistry';
-import { ITranslator, TranslationBundle } from '@jupyterlab/translation';
-import { Notebook } from '@jupyterlab/notebook';
+import type { ErrorObject } from 'ajv';
+import type { ISettingRegistry } from '@jupyterlab/settingregistry';
+import type { ITranslator, TranslationBundle } from '@jupyterlab/translation';
+import type { Notebook } from '@jupyterlab/notebook';
 import { Token } from '@lumino/coreutils';
-import { IDisposable } from '@lumino/disposable';
-import { ISignal } from '@lumino/signaling';
-import { LabIcon, RankedMenu } from '@jupyterlab/ui-components';
-import React from 'react';
+import type { IDisposable } from '@lumino/disposable';
+import type { ISignal } from '@lumino/signaling';
+import type { LabIcon, RankedMenu } from '@jupyterlab/ui-components';
+import type React from 'react';
 import PACKAGE from '../package.json';
 
-import { CallBackProps, Placement, Props as JoyrideProps, Step } from 'react-joyride';
+import type {
+  CallBackProps,
+  Placement,
+  Props as JoyrideProps,
+  Step
+} from 'react-joyride';
 
 /**
  * Namespace for everything

@@ -1,13 +1,14 @@
 import React from 'react';
 
-import { CommandRegistry } from '@lumino/commands';
+import type { CommandRegistry } from '@lumino/commands';
 
-import { ILabShell, JupyterFrontEnd } from '@jupyterlab/application';
-import { INotebookTracker, NotebookActions, NotebookPanel } from '@jupyterlab/notebook';
+import type { ILabShell, JupyterFrontEnd } from '@jupyterlab/application';
+import type { INotebookTracker, NotebookPanel } from '@jupyterlab/notebook';
+import { NotebookActions } from '@jupyterlab/notebook';
 
 import { NOTEBOOK_ID, WELCOME_ID } from './constants';
 import { defaultNotebookTourIcon, defaultTourIcon } from './icons';
-import { ITourManager } from './tokens';
+import type { ITourManager } from './tokens';
 
 namespace DefaultTours {
   export namespace JupyterLab {

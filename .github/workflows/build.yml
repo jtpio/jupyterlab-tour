@@ -2,130 +2,150 @@ name: Build
 
 on:
   push:
-    branches: main
+    branches: [main]
   pull_request:
-    branches: '*'
+    branches: ['*']
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MIN_PYTHON: &min-python '3.10'
+  MIN_LAB: &min-lab '4.3.0'
+  MIN_NB: &min-nb '7.3.0'
+  MAX_LAB: &max-lab '4.5'
+  MAX_NB: &max-nb '7.5'
 
 jobs:
   build:
+    name: Build
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - &step-checkout
+        name: Checkout
+        uses: actions/checkout@v6
 
-      - name: Base Setup
+      - &step-base-setup
+        name: Base Setup
         uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
 
-      - name: Install dependencies
-        run: python -m pip install -U "jupyterlab>=4.0.0,<5"
+      - &step-py-deps
+        name: Install Python dependencies
+        run: |-
+          python -m pip install -v -U "jupyterlab~=${MIN_LAB}" build
+          pip check
 
-      - name: Lint the extension
-        run: |
-          set -eux
-          jlpm
-          jlpm run lint:check
+      - &step-js-cache
+        name: Set up JS cache
+        uses: &uses-cache actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-${{ hashFiles('yarn.lock') }}
 
-      - name: Test the extension
-        run: |
-          set -eux
-          jlpm run test
-
-      - name: Build the extension
-        run: |
-          set -eux
-          python -m pip install .[test]
-
-          jupyter labextension list
-          jupyter labextension list 2>&1 | grep -ie "jupyterlab-tour.*OK"
-          python -m jupyterlab.browser_check
+      - &step-js-deps
+        name: Install JS dependencies
+        run: &run-maybe-jlpm ls node_modules/.yarn-state.yml || jlpm --immutable
 
       - name: Package the extension
-        run: |
-          set -eux
-
-          pip install build
-          python -m build
-          pip uninstall -y "jupyterlab_tour" jupyterlab
+        run: pyproject-build .
 
       - name: Upload extension packages
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v5
         with:
-          name: extension-artifacts
+          name: &dist jpt-${{ github.run_number }}-dist
           path: dist/jupyterlab_tour*
           if-no-files-found: error
 
-  test_isolated:
+  smoke-test:
+    name: Smoke Test
     needs: build
     runs-on: ubuntu-latest
-
     steps:
       - name: Install Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
-          python-version: '3.9'
+          python-version: *min-python
           architecture: 'x64'
-      - uses: actions/download-artifact@v3
+
+      - &step-download-dist
+        name: Download extension package
+        uses: actions/download-artifact@v6
         with:
-          name: extension-artifacts
-      - name: Install and Test
+          name: *dist
+
+      - name: Install Extension
+        run: pip install -v "jupyterlab~=${MIN_LAB}" jupyterlab_tour*.whl
+
+      - name: Smoke Test
         run: |
-          set -eux
-          # Remove NodeJS, twice to take care of system and locally installed node versions.
-          sudo rm -rf $(which node)
-          sudo rm -rf $(which node)
-
-          pip install "jupyterlab>=4.0.0,<5" jupyterlab_tour*.whl
-
           jupyter labextension list
           jupyter labextension list 2>&1 | grep -ie "jupyterlab-tour.*OK"
           python -m jupyterlab.browser_check --no-browser-test
 
-  integration-tests-lab:
-    name: Integration tests for JupyterLab
+  unit-test:
+    name: Unit Test/Lint
+    runs-on: ubuntu-latest
+    steps:
+      - *step-checkout
+      - *step-base-setup
+      - *step-js-cache
+      - *step-py-deps
+      - *step-js-deps
+
+      - name: Lint the extension
+        run: jlpm run lint:check
+
+      - name: Test the extension
+        run: jlpm run test
+
+  ui-tests:
+    name: UI tests (${{ matrix.client }} ~${{ matrix.client-version }})
+    needs: [smoke-test, unit-test]
+    runs-on: ubuntu-latest
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: &path-browsers ${{ github.workspace }}/pw-browsers
     strategy:
       fail-fast: false
       matrix:
-        jupyterlab: ['3.6', '4.0']
-    needs: build
-    runs-on: ubuntu-latest
-
-    env:
-      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/pw-browsers
-
+        include:
+          - client: jupyterlab
+            client-version: *min-lab
+          - client: jupyterlab
+            client-version: *max-lab
+          - client: notebook
+            client-version: *min-nb
+            jest-args: &jest-nb -c playwright-notebook.config.js
+          - client: notebook
+            client-version: *max-nb
+            jest-args: *jest-nb
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - *step-checkout
+      - *step-base-setup
+      - *step-download-dist
 
-      - name: Base Setup
-        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
-
-      - name: Download extension package
-        uses: actions/download-artifact@v3
+      - name: Set up JS cache
+        uses: *uses-cache
         with:
-          name: extension-artifacts
+          path: ui-tests/node_modules
+          key: &key-ui-yarn-lock ${{ runner.os }}-${{ hashFiles('ui-tests/yarn.lock') }}
+
+      - name: Set up browser cache
+        uses: *uses-cache
+        with:
+          path: *path-browsers
+          key: *key-ui-yarn-lock
 
       - name: Install the extension
         run: |
           set -eux
-          python -m pip install "jupyterlab~=${{ matrix.jupyterlab }}" jupyterlab_tour*.whl
+          python -m pip install "${{ matrix.client }}~=${{ matrix.client-version }}" jupyterlab_tour*.whl
 
       - name: Install dependencies
         working-directory: ui-tests
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
-        run: |
-          if [[ "${{ matrix.jupyterlab }}" == "3.6" ]]; then
-            jlpm add -D "@jupyterlab/galata@^4.0.0"
-          fi
-          jlpm install
-
-      - name: Set up browser cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            ${{ github.workspace }}/pw-browsers
-          key: ${{ runner.os }}-${{ hashFiles('ui-tests/yarn.lock') }}
+        run: *run-maybe-jlpm
 
       - name: Install browser
         run: jlpm playwright install chromium
@@ -134,72 +154,18 @@ jobs:
       - name: Execute integration tests
         working-directory: ui-tests
         run: |
-          jlpm playwright test --output test-results-${{ matrix.jupyterlab }}
+          jlpm playwright test \
+            --output test-results-${{ matrix.client }}-${{ matrix.client-version}} \
+            ${{ matrix.jest-args }}
 
       - name: Upload Playwright Test report
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v5
         with:
-          name: jupyterlab-tour-playwright-tests
+          name: |-
+            jpt-${{ github.run_number }}-ui-tests-${{ matrix.client }}-${{ matrix.client-version }}
           path: |
             ui-tests/test-results*
-            ui-tests/playwright-report
-
-  integration-tests-nb:
-    name: Integration tests for Notebook
-    needs: build
-    runs-on: ubuntu-latest
-
-    env:
-      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/pw-browsers
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Base Setup
-        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
-
-      - name: Download extension package
-        uses: actions/download-artifact@v3
-        with:
-          name: extension-artifacts
-
-      - name: Install the extension
-        run: |
-          set -eux
-          python -m pip install "notebook~=7.0" jupyterlab_tour*.whl
-
-      - name: Install dependencies
-        working-directory: ui-tests
-        env:
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
-        run: |
-          jlpm install
-
-      - name: Set up browser cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            ${{ github.workspace }}/pw-browsers
-          key: ${{ runner.os }}-${{ hashFiles('ui-tests/yarn.lock') }}
-
-      - name: Install browser
-        run: jlpm playwright install chromium
-        working-directory: ui-tests
-
-      - name: Execute integration tests
-        working-directory: ui-tests
-        run: |
-          jlpm playwright test -c playwright-notebook.config.js
-
-      - name: Upload Playwright Test report
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: notebook-tour-playwright-tests
-          path: |
-            ui-tests/test-results
             ui-tests/playwright-report
 
   check_links:
@@ -207,6 +173,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v3
+      - *step-checkout
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
       - uses: jupyterlab/maintainer-tools/.github/actions/check-links@v1

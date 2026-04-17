@@ -1,16 +1,11 @@
 import { JSONExt } from '@lumino/coreutils';
-import { ISignal, Signal } from '@lumino/signaling';
-import { LabIcon } from '@jupyterlab/ui-components';
-import {
-  CallBackProps,
-  Props as JoyrideProps,
-  status,
-  STATUS,
-  Step,
-  valueof
-} from 'react-joyride';
+import type { ISignal } from '@lumino/signaling';
+import { Signal } from '@lumino/signaling';
+import type { LabIcon } from '@jupyterlab/ui-components';
+import type { CallBackProps, Props as JoyrideProps, Status, Step } from 'react-joyride';
+import { STATUS } from 'react-joyride';
 import { TutorialDefaultOptions } from './constants';
-import { ITourHandler, StepPlacement } from './tokens';
+import type { ITourHandler, StepPlacement } from './tokens';
 import { tourIcon } from './icons';
 
 // TODO should be IDisposable !! handling signal connection clearance
@@ -276,7 +271,7 @@ export class TourHandler implements ITourHandler {
   private _isDisposed = false;
   private _label: string;
   private _options: Partial<JoyrideProps>;
-  private _previousStatus: valueof<status> = STATUS.READY;
+  private _previousStatus: Status = STATUS.READY;
   private _previousStepIndex = -1;
   private _steps: Step[] = new Array<Step>();
   private _icon: LabIcon | null;

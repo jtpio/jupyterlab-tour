@@ -8,18 +8,28 @@
 
 ### Bugs fixed
 
-- Use existing server settings when creating the `ConfigSection` [#85](https://github.com/jupyterlab-contrib/jupyterlab-tour/pull/85) ([@jtpio](https://github.com/jtpio))
+- Use existing server settings when creating the `ConfigSection`
+  [#85](https://github.com/jupyterlab-contrib/jupyterlab-tour/pull/85)
+  ([@jtpio](https://github.com/jtpio))
 
 ### Maintenance and upkeep improvements
 
-- Bump ip from 2.0.0 to 2.0.1 [#84](https://github.com/jupyterlab-contrib/jupyterlab-tour/pull/84) ([@dependabot](https://github.com/dependabot))
-- Bump ip from 2.0.0 to 2.0.1 in /ui-tests [#83](https://github.com/jupyterlab-contrib/jupyterlab-tour/pull/83) ([@dependabot](https://github.com/dependabot))
+- Bump ip from 2.0.0 to 2.0.1
+  [#84](https://github.com/jupyterlab-contrib/jupyterlab-tour/pull/84)
+  ([@dependabot](https://github.com/dependabot))
+- Bump ip from 2.0.0 to 2.0.1 in /ui-tests
+  [#83](https://github.com/jupyterlab-contrib/jupyterlab-tour/pull/83)
+  ([@dependabot](https://github.com/dependabot))
 
 ### Contributors to this release
 
 ([GitHub contributors page for this release](https://github.com/jupyterlab-contrib/jupyterlab-tour/graphs/contributors?from=2023-11-08&to=2024-02-29&type=c))
 
-[@dependabot](https://github.com/search?q=repo%3Ajupyterlab-contrib%2Fjupyterlab-tour+involves%3Adependabot+updated%3A2023-11-08..2024-02-29&type=Issues) | [@github-actions](https://github.com/search?q=repo%3Ajupyterlab-contrib%2Fjupyterlab-tour+involves%3Agithub-actions+updated%3A2023-11-08..2024-02-29&type=Issues) | [@jtpio](https://github.com/search?q=repo%3Ajupyterlab-contrib%2Fjupyterlab-tour+involves%3Ajtpio+updated%3A2023-11-08..2024-02-29&type=Issues)
+[@dependabot](https://github.com/search?q=repo%3Ajupyterlab-contrib%2Fjupyterlab-tour+involves%3Adependabot+updated%3A2023-11-08..2024-02-29&type=Issues)
+|
+[@github-actions](https://github.com/search?q=repo%3Ajupyterlab-contrib%2Fjupyterlab-tour+involves%3Agithub-actions+updated%3A2023-11-08..2024-02-29&type=Issues)
+|
+[@jtpio](https://github.com/search?q=repo%3Ajupyterlab-contrib%2Fjupyterlab-tour+involves%3Ajtpio+updated%3A2023-11-08..2024-02-29&type=Issues)
 
 <!-- <END NEW CHANGELOG ENTRY> -->
 

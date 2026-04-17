@@ -1,15 +1,14 @@
-import { ISignal, Signal } from '@lumino/signaling';
+import type { ISignal } from '@lumino/signaling';
+import { Signal } from '@lumino/signaling';
 import { Notification } from '@jupyterlab/apputils';
-import {
-  ITranslator,
-  TranslationBundle,
-  nullTranslator
-} from '@jupyterlab/translation';
-import { IDisposableMenuItem, LabIcon, RankedMenu } from '@jupyterlab/ui-components';
-import { Locale } from 'react-joyride';
+import type { ITranslator, TranslationBundle } from '@jupyterlab/translation';
+import { nullTranslator } from '@jupyterlab/translation';
+import type { IDisposableMenuItem, RankedMenu } from '@jupyterlab/ui-components';
+import { LabIcon } from '@jupyterlab/ui-components';
+import type { Locale } from 'react-joyride';
 
 import { CommandIDs } from './constants';
-import {
+import type {
   ITour,
   ITourHandler,
   ITourManager,
